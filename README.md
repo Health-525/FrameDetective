@@ -2,7 +2,9 @@
 
 <div align="center">
 
-  <h1>🎬 FrameDetective</h1>
+  <img src="assets/framedetective-banner.png" alt="FrameDetective - AI-Powered Video Analysis System" width="100%">
+
+  <br><br>
 
   <p align="center">
     <b>🚀 基于 SAM3 的智能视频内容检测与分析系统</b>
