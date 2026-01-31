@@ -1,10 +1,18 @@
 # FrameDetective
 
 <div align="center">
-  <img src="assets/framedetective-banner.jpg" alt="FrameDetective Banner" width="100%">
+
+  <h1>🎬 FrameDetective</h1>
 
   <p align="center">
     <b>🚀 基于 SAM3 的智能视频内容检测与分析系统</b>
+  </p>
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/SAM3-Video%20Analysis-blue?style=for-the-badge" alt="SAM3">
+    <img src="https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js" alt="Node.js">
+    <img src="https://img.shields.io/badge/React-18+-61dafb?style=for-the-badge&logo=react" alt="React">
+    <img src="https://img.shields.io/badge/AI-Powered-orange?style=for-the-badge" alt="AI Powered">
   </p>
 
   <p align="center">
@@ -14,6 +22,12 @@
     <a href="#技术栈">技术栈</a> •
     <a href="#示例">示例</a>
   </p>
+
+  <br>
+
+  <!-- 海报图片占位 - 请添加 assets/framedetective-banner.jpg -->
+  <!-- <img src="assets/framedetective-banner.jpg" alt="FrameDetective Banner" width="100%"> -->
+
 </div>
 
 ---
