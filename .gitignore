@@ -84,3 +84,5 @@ config.local.json
 # MacOS
 .AppleDouble
 .LSOverride
+# Text files (instructions, notes, etc.)  
+*.txt 
