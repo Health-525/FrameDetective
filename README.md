@@ -1,8 +1,26 @@
-# SamSearch
+# FrameDetective
 
-> 🚀 基于 SAM 模型的智能视频内容快速检索系统
+<div align="center">
+  <img src="assets/framedetective-banner.jpg" alt="FrameDetective Banner" width="100%">
 
-SamSearch 是一个强大的视频对象检测与分析平台，利用 Meta 的 SAM (Segment Anything Model) 技术，帮助用户快速定位和检索视频中的特定对象。支持逐帧分析、智能分割、出现统计等高级功能。
+  <p align="center">
+    <b>🚀 基于 SAM3 的智能视频内容检测与分析系统</b>
+  </p>
+
+  <p align="center">
+    <a href="#核心功能">功能</a> •
+    <a href="#快速开始">快速开始</a> •
+    <a href="#api-文档">API</a> •
+    <a href="#技术栈">技术栈</a> •
+    <a href="#示例">示例</a>
+  </p>
+</div>
+
+---
+
+## 📖 项目简介
+
+**FrameDetective** 是一个强大的视频对象检测与分析平台，利用 Meta 的 **SAM3 (Segment Anything Model 3)** 技术，帮助用户快速定位和检索视频中的特定对象。支持逐帧分析、智能分割、出现统计等高级功能，可应用于安防监控、视频内容分析、反人口贩卖等场景。
 
 ## ✨ 核心功能
 

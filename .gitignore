@@ -20,6 +20,8 @@ uploads/
 *.mkv
 *.webm
 !example/*.mp4
+!assets/*.jpg
+!assets/*.png
 
 # Outputs - SAM模型处理输出
 outputs/
