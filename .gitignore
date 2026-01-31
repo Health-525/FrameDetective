@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Uploads - 用户上传的文件
+public/uploads/
+uploads/
+
+# Media files - 媒体文件
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+!example/*.mp4
+
+# Outputs - SAM模型处理输出
+outputs/
+
+# Example files - 示例文件夹
+example/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build files
+dist/
+build/
+
+# Other
+.trae/
+
+# Sensitive data files
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets.json
+credentials.json
+config.local.json
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# MacOS
+.AppleDouble
+.LSOverride

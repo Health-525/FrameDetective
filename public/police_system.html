@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>SAM3 Video Processor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h1>SAM3 Video 处理工具</h1>
+  </div>
+  
+  <div class="container">
+    <!-- 左侧：参数输入 -->
+    <div class="panel left-panel">
+      <div class="tab-header">
+        <button type="button" class="tab-btn active" data-tab="tab-create">新建任务</button>
+        <button type="button" class="tab-btn" data-tab="tab-analyze">分析 ZIP</button>
+      </div>
+
+      <!-- Tab 1: 新建任务 -->
+      <div id="tab-create" class="tab-content active">
+        <form id="processForm">
+          <div class="global-settings">
+            <h3>全局设置</h3>
+            <div class="form-group">
+              <label for="global_prompt">提示词 (Prompt)</label>
+              <input type="text" id="global_prompt" name="global_prompt" placeholder="例如: blue boy" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex:1;">
+                <label for="mask_color">掩码颜色</label>
+                <select id="mask_color" name="mask_color">
+                  <option value="red">红色</option>
+                  <option value="blue">蓝色</option>
+                  <option value="green">绿色</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label for="mask_opacity">透明度</label>
+                <input type="number" id="mask_opacity" name="mask_opacity" step="0.1" min="0" max="1" value="0.8" required>
+              </div>
+            </div>
+
+            <div class="checkbox-row">
+              <div class="checkbox-group">
+                <input type="checkbox" id="mask_only" name="mask_only" value="true">
+                <label for="mask_only">仅显示掩码</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="return_zip" name="return_zip" value="true">
+                <label for="return_zip">返回 ZIP</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="list-toolbar">
+            <button type="button" id="addVideoBtn" class="secondary-btn" onclick="window.__addVideo && window.__addVideo()">+ 添加视频</button>
+            <div id="toast" class="toast" style="display:none;"></div>
+          </div>
+
+          <div id="videoList"></div>
+
+          <button type="submit" id="submitBtn">开始处理所有任务</button>
+        </form>
+      </div>
+
+      <!-- Tab 2: 分析 ZIP -->
+      <div id="tab-analyze" class="tab-content">
+        <div class="global-settings">
+          <h3>分析历史 ZIP</h3>
+          <p class="hint-text">无需重新调用模型，快速提取出现时间段。</p>
+          
+          <div class="form-group">
+            <label for="zip_url">ZIP 下载链接</label>
+            <input type="text" id="zip_url" name="zip_url" placeholder="粘贴 ZIP URL">
+          </div>
+          
+          <div class="form-group">
+            <label for="origin_video_url">原始视频 URL (可选)</label>
+            <input type="text" id="origin_video_url" name="origin_video_url" placeholder="用于计算精确时间戳">
+          </div>
+          
+          <div class="form-group">
+             <label for="zip_fps">视频帧率 (FPS, 仅当无视频URL时使用)</label>
+             <input type="number" id="zip_fps" name="zip_fps" value="25" placeholder="例如: 25 或 30">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label for="zip_threshold">像素阈值</label>
+              <input type="number" id="zip_threshold" name="zip_threshold" min="0" step="1" value="1000">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label for="zip_min_run">连续帧数</label>
+              <input type="number" id="zip_min_run" name="zip_min_run" min="1" step="1" value="2">
+            </div>
+          </div>
+          
+          <button type="button" id="analyzeZipBtn" class="primary-btn">开始分析</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中间：输入预览 -->
+    <div class="panel middle-panel">
+      <h2>输入预览</h2>
+      <div id="inputPreviewList" class="video-list">
+        <!-- 动态添加 -->
+      </div>
+    </div>
+
+    <!-- 右侧：结果输出 -->
+    <div class="panel right-panel">
+      <h2>处理结果</h2>
+      <div id="outputResultList" class="video-list">
+        <!-- 动态添加 -->
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

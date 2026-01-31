@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>守护行动 - 反拐人像智能研判系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f1f1f1}
+    ::-webkit-scrollbar-thumb{background:#c1c1c1;border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:#a8a8a8}
+    .tab-btn.active{border-bottom-color:#2563eb;color:#2563eb;background-color:#eff6ff}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .mode-pane{display:none}
+    .mode-pane.active{display:block}
+    .queue-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;transition:background 0.2s}
+    .queue-item:hover{background:#f9fafb}
+    .queue-item.selected{background:#eff6ff;border-left:3px solid #2563eb}
+    .queue-item-header{display:flex;justify-content:space-between;font-size:0.75rem;color:#6b7280;margin-bottom:4px}
+    .queue-status.pending{color:#f59e0b}
+    .queue-status.running{color:#3b82f6;font-weight:bold}
+    .queue-status.success{color:#10b981}
+    .queue-status.error{color:#ef4444}
+    .queue-info{font-size:0.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .log-console{height:200px;overflow-y:auto;background:#1f2937;color:#e5e7eb;padding:10px;font-family:monospace;font-size:0.75rem;border-radius:4px}
+    .log-entry{margin-bottom:2px}
+    .log-entry .time{color:#9ca3af;margin-right:8px}
+    .log-entry.error{color:#fca5a5}
+    .log-entry.success{color:#86efac}
+    .log-entry.info{color:#93c5fd}
+    .result-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;margin-bottom:10px}
+    .result-header{display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.875rem;font-weight:bold;color:#166534}
+    .result-body{font-size:0.875rem;color:#374151}
+    .result-links{margin-top:8px;display:flex;gap:10px}
+    .link-btn{color:#2563eb;text-decoration:underline;font-size:0.875rem}
+    .global-alert{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:4px;color:#fff;font-weight:bold;z-index:9999;display:none;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+    .global-alert:not(:empty){display:block}
+    .global-alert.error{background-color:#ef4444}
+    .global-alert.success{background-color:#10b981}
+    .global-alert.info{background-color:#3b82f6}
+    .timeline-bar{position:relative;height:8px;border-radius:9999px;background:#e5e7eb;overflow:hidden}
+    .timeline-segment{position:absolute;top:0;bottom:0;background:rgba(239,68,68,0.85)}
+    .timeline-markers{margin-top:4px;display:flex;justify-content:space-between;font-size:0.625rem;color:#6b7280}
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
+  <div class="bg-gradient-to-r from-blue-900 to-blue-800 text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded flex items-center justify-center text-blue-900">
+          <i data-lucide="eye" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-xl font-bold tracking-wide">守护行动</div>
+          <div class="text-xs text-blue-200">反拐人像智能研判系统</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex gap-1" id="nav-tabs">
+        <button data-tab="dashboard" class="tab-btn active flex items-center gap-2 px-6 py-4 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 工作台
+        </button>
+        <button data-tab="video" class="tab-btn flex items-center gap-2 px-6 py-4 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50">
+          <i data-lucide="play" class="w-4 h-4"></i> 视频分析
+        </button>
+        <button data-tab="age" class="tab-btn flex items-center gap-2 px-6 py-4 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50">
+          <i data-lucide="users" class="w-4 h-4"></i> 年龄推演
+        </button>
+        <button data-tab="batch" class="tab-btn flex items-center gap-2 px-6 py-4 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50">
+          <i data-lucide="database" class="w-4 h-4"></i> 全量匹配
+        </button>
+      </div>
+    </div>
+  </div>
+  <main class="flex-1">
+    <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <section id="dashboard" class="tab-content active space-y-6">
+        <div class="bg-red-50 border-l-4 border-red-600 p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i data-lucide="alert-circle" class="text-red-600 w-6 h-6"></i>
+            <div>
+              <div class="font-bold text-red-900">紧急告警</div>
+              <div class="text-sm text-red-700">发现 3 个高置信度匹配，需立即复核</div>
+            </div>
+          </div>
+          <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">立即处理</button>
+        </div>
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-white border border-gray-200 rounded p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-gray-600 text-sm">待复核告警</div>
+                <div class="text-3xl font-bold text-orange-600 mt-2" id="stat-pending">234</div>
+              </div>
+              <i data-lucide="clock" class="text-orange-600 w-8 h-8"></i>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-gray-600 text-sm">发现疑似匹配</div>
+                <div class="text-3xl font-bold text-blue-600 mt-2" id="stat-matched">1847</div>
+              </div>
+              <i data-lucide="users" class="text-blue-600 w-8 h-8"></i>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-gray-600 text-sm">今日处理量</div>
+                <div class="text-3xl font-bold text-green-600 mt-2">1,247</div>
+              </div>
+              <i data-lucide="check-circle" class="text-green-600 w-8 h-8"></i>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-gray-600 text-sm">本月破案</div>
+                <div class="text-3xl font-bold text-teal-600 mt-2">12</div>
+              </div>
+              <i data-lucide="bar-chart-3" class="text-teal-600 w-8 h-8"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="font-bold text-lg">高置信度匹配结果</h3>
+            <button class="text-blue-600 text-sm hover:underline">查看全部</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">序号</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">档案编号</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">置信度</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">匹配来源</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">发现时间</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">地点</th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">操作</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <section id="video" class="tab-content">
+        <div class="grid grid-cols-4 gap-6">
+          <div class="space-y-4">
+            <!-- New Video Task Form (Replaces Upload Video) -->
+            <div class="bg-white border border-gray-200 rounded p-4">
+              <h3 class="font-bold mb-4">新建分析任务</h3>
+              <form id="videoTaskForm">
+                <!-- Mode Toggle Tabs -->
+                <div class="flex gap-2 mb-4 bg-gray-100 p-1 rounded">
+                  <button type="button" class="mode-tab-btn flex-1 py-1.5 text-sm rounded transition-colors active bg-white shadow-sm text-blue-600 font-medium" data-mode="text">以文搜人</button>
+                  <button type="button" class="mode-tab-btn flex-1 py-1.5 text-sm rounded transition-colors text-gray-500 hover:text-gray-700" data-mode="image">以图搜人</button>
+                </div>
+
+                <div class="mb-3">
+                  <label for="inputVideoUrl" class="block text-sm font-medium text-gray-700 mb-1">视频 URL <span class="text-red-500">*</span></label>
+                  <input type="url" id="inputVideoUrl" name="video" placeholder="粘贴视频 URL" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                  <div class="text-xs text-gray-400 mt-1">支持 MP4/MOV 直链</div>
+                </div>
+
+                <!-- Mode 1: Text Search -->
+                <div id="mode-text-pane" class="mode-pane active">
+                  <div class="mb-3">
+                    <label for="inputPrompt" class="block text-sm font-medium text-gray-700 mb-1">提示词 (Prompt)</label>
+                    <input type="text" id="inputPrompt" name="prompt" value="blue boy" placeholder="例如: blue boy" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  </div>
+                </div>
+
+                <!-- Mode 2: Image Search -->
+                <div id="mode-image-pane" class="mode-pane">
+                  <div class="mb-3">
+                    <label for="inputSampleImage" class="block text-sm font-medium text-gray-700 mb-1">目标人物照片</label>
+                    <div class="flex gap-2">
+                      <input type="url" id="inputSampleImage" name="sample_image_url" placeholder="图片 URL" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <input type="file" id="inputFileUpload" accept="image/*" style="display:none;">
+                      <button type="button" id="btnBrowseFile" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm">📂</button>
+                    </div>
+                    <div id="dropZone" class="hidden border-2 border-dashed border-blue-400 bg-blue-50 p-4 text-center text-sm text-blue-600 rounded mt-2">
+                      释放以上传图片
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Hidden/Advanced Settings (Simplified) -->
+                <div class="mb-3">
+                    <label class="flex items-center text-xs text-gray-600">
+                        <input type="checkbox" name="return_zip" id="checkReturnZip" checked class="mr-1">
+                        <span>返回 ZIP 结果包</span>
+                    </label>
+                    <input type="checkbox" name="mask_only" id="checkMaskOnly" class="hidden">
+                    <input type="hidden" name="mask_color" value="red">
+                    <input type="hidden" name="mask_opacity" value="0.8">
+                </div>
+
+                <div class="flex gap-2">
+                  <button type="button" id="btnStartTask" class="flex-1 bg-blue-600 text-white py-2 rounded text-sm hover:bg-blue-700 font-medium">开始任务</button>
+                  <button type="button" id="btnResetForm" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm">重置</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Task Queue -->
+            <div class="bg-white border border-gray-200 rounded p-4">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold">任务队列</h3>
+                <span id="queueCount" class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">0</span>
+              </div>
+              <div id="taskQueueList" class="space-y-2 max-h-60 overflow-y-auto">
+                <div class="text-sm text-gray-400 text-center py-4" id="queueEmptyState">暂无待处理任务</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle Column: Preview -->
+          <div class="col-span-2 space-y-4">
+             <div class="bg-white border border-gray-200 rounded p-4 h-full flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">视频预览</h3>
+                    <div id="previewTaskInfo" class="text-sm text-gray-500"></div>
+                </div>
+                
+                <div id="mediaPreviewArea" class="bg-black rounded flex-1 flex items-center justify-center min-h-[300px] relative overflow-hidden">
+                    <div class="text-gray-500 text-sm">请选择任务以预览</div>
+                    <video id="previewVideoPlayer" controls style="display:none; max-width:100%; max-height:100%;"></video>
+                </div>
+                
+                <!-- Hidden JSON Preview (User can check devtools or we show if needed) -->
+                <div class="mt-4 border-t pt-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-mono text-gray-500">参数预览</span>
+                        <button id="btnCopyJson" class="text-xs text-blue-600 hover:underline">复制 JSON</button>
+                    </div>
+                    <pre id="jsonPreviewCode" class="bg-gray-50 p-2 rounded text-xs text-gray-600 font-mono overflow-x-auto">{}</pre>
+                </div>
+             </div>
+          </div>
+
+          <!-- Right Column: Results & Logs -->
+          <div class="space-y-4">
+            <div class="bg-white border border-gray-200 rounded p-4">
+              <h3 class="font-bold mb-4">分析结果</h3>
+              <div id="resultList" class="space-y-3 max-h-[400px] overflow-y-auto">
+                 <div class="text-sm text-gray-400 text-center py-4" id="resultEmptyState">暂无结果</div>
+              </div>
+            </div>
+            
+            <div class="bg-white border border-gray-200 rounded p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm">系统日志</h3>
+                    <button id="btnClearLogs" class="text-xs text-gray-500 hover:text-gray-700">清空</button>
+                </div>
+                <div id="systemLogs" class="log-console" role="log" aria-live="polite">
+                    <div class="log-entry info"><span class="time">[System]</span> 模块已加载</div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="age" class="tab-content">
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-2 bg-white border border-gray-200 rounded p-6">
+            <h3 class="font-bold text-lg mb-4">失踪儿童档案 #20190523001</h3>
+            <div class="grid grid-cols-3 gap-6 mb-6">
+              <div>
+                <div class="text-sm text-gray-600 mb-2">原始照片（3岁）</div>
+                <div class="aspect-square bg-gray-200 rounded flex items-center justify-center">
+                  <div class="text-center text-gray-500">
+                    <i data-lucide="users" class="w-12 h-12"></i>
+                    <div class="text-xs mt-2">失踪时照片</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-600 mb-2">AI推演图像（8岁）</div>
+                <div class="aspect-square bg-purple-100 rounded flex items-center justify-center border-2 border-purple-400">
+                  <div class="text-center text-purple-600">
+                    <i data-lucide="users" class="w-12 h-12"></i>
+                    <div class="text-xs mt-2">AI生成预测</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-600 mb-2">比对结果（置信度排序）</div>
+                <div class="space-y-2">
+                  <div class="p-2 bg-red-50 border border-red-200 rounded text-sm">候选1 <span class="font-bold text-red-600">92%</span></div>
+                  <div class="p-2 bg-orange-50 border border-orange-200 rounded text-sm">候选2 <span class="font-bold text-orange-600">85%</span></div>
+                  <div class="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">候选3 <span class="font-bold text-yellow-600">78%</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 class="font-bold mb-3">失踪信息</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between"><span class="text-gray-600">姓名</span><span>张XX（化名）</span></div>
+                  <div class="flex justify-between"><span class="text-gray-600">失踪时间</span><span>2019-05-23</span></div>
+                  <div class="flex justify-between"><span class="text-gray-600">失踪地点</span><span>XX市XX区</span></div>
+                  <div class="flex justify-between"><span class="text-gray-600">体貌特征</span><span>左耳后胎记</span></div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-bold mb-3">推演任务状态</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-center gap-2 text-green-600"><i data-lucide="check-circle" class="w-4 h-4"></i> 图像生成完成 (12-13 14:30)</div>
+                  <div class="flex items-center gap-2 text-purple-600"><i data-lucide="clock" class="w-4 h-4"></i> 全库比对中...</div>
+                  <div class="mt-3">
+                    <div class="flex justify-between text-xs mb-1"><span>已比对 2,340,567 / 8,000,000</span><span class="font-bold">29%</span></div>
+                    <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-purple-600 h-2 rounded-full" style="width:29%"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">开始全量比对</button>
+              <button class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">查看详细报告</button>
+              <button class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">生成多版本推演</button>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded p-4">
+            <h3 class="font-bold mb-4">AI成长预测 - 技术解释</h3>
+            <div class="space-y-4 text-sm">
+              <div>
+                <div class="text-gray-600 mb-1">模型版本</div>
+                <div class="font-mono text-xs bg-gray-100 p-2 rounded">FaceAging-v3.2 (公安专用版)</div>
+              </div>
+              <div>
+                <div class="text-gray-600 mb-1">输入信息</div>
+                <div>3张原始照片 (1-3岁)</div>
+              </div>
+              <div>
+                <div class="text-gray-600 mb-1">推演年龄</div>
+                <div>8岁（当前年龄估算）</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="batch" class="tab-content">
+        <div class="space-y-6">
+          <div class="bg-white border border-gray-200 rounded p-6">
+            <h3 class="font-bold text-lg mb-4">📊 当前运行任务</h3>
+            <div class="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <div class="text-sm text-gray-600">任务ID</div>
+                  <div class="font-mono font-bold">BM-20241213-001</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-600">任务类型</div>
+                  <div>失踪儿童库 × 2024年Q4监控数据</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                规模：1,203个档案 × 500万小时监控
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded p-4 mb-4">
+              <h4 class="font-bold mb-3">进度监控</h4>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span>总体进度</span>
+                    <span class="font-bold">58%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-blue-600 h-3 rounded-full" style="width:58%"></div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div class="text-gray-600 mb-1">已处理视频流</div>
+                    <div class="font-bold">12,457 路</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-600 mb-1">完成比对帧数</div>
+                    <div class="font-bold">68,234,890 帧</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-600 mb-1">发现疑似匹配</div>
+                    <div class="font-bold text-orange-600">327 条</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="border border-gray-200 rounded p-4">
+                <div class="text-sm text-gray-600 mb-1">任务优先级</div>
+                <div class="font-bold text-red-600 mb-2">一级 (省厅督办)</div>
+                <div class="text-xs text-gray-500">自动优先调度重点地区与重点时段视频。</div>
+              </div>
+              <div class="border border-gray-200 rounded p-4">
+                <div class="text-sm text-gray-600 mb-1">计算资源占用</div>
+                <div class="font-bold mb-2">GPU: 68% / 内存: 72%</div>
+                <div class="text-xs text-gray-500">当前分配 32 块 GPU 加速节点。</div>
+              </div>
+              <div class="border border-gray-200 rounded p-4">
+                <div class="text-sm text-gray-600 mb-1">预计完成时间</div>
+                <div class="font-bold mb-2">约 7 小时 23 分</div>
+                <div class="text-xs text-gray-500">可根据需要随时调整任务优先级。</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-lg">📁 历史任务与命中摘要</h3>
+              <button class="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50">
+                导出报表
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">任务ID</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">时间范围</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">覆盖区域</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">命中数量</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">高置信度</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">状态</th>
+                    <th class="px-4 py-2 text-left text-gray-700 font-semibold">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-2 font-mono text-xs">BM-20241210-001</td>
+                    <td class="px-4 py-2">2024-12-01 ~ 2024-12-10</td>
+                    <td class="px-4 py-2">XX省全域</td>
+                    <td class="px-4 py-2">128</td>
+                    <td class="px-4 py-2 text-red-600 font-bold">9</td>
+                    <td class="px-4 py-2">
+                      <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">已完成</span>
+                    </td>
+                    <td class="px-4 py-2">
+                      <button class="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50">查看详情</button>
+                    </td>
+                  </tr>
+                  <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-2 font-mono text-xs">BM-20241211-003</td>
+                    <td class="px-4 py-2">2024-12-11</td>
+                    <td class="px-4 py-2">XX市主城区</td>
+                    <td class="px-4 py-2">47</td>
+                    <td class="px-4 py-2 text-red-600 font-bold">3</td>
+                    <td class="px-4 py-2">
+                      <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700">运行中</span>
+                    </td>
+                    <td class="px-4 py-2">
+                      <button class="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50">查看详情</button>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 font-mono text-xs">BM-20241212-005</td>
+                    <td class="px-4 py-2">2024-12-12</td>
+                    <td class="px-4 py-2">跨省重点线路</td>
+                    <td class="px-4 py-2">63</td>
+                    <td class="px-4 py-2 text-red-600 font-bold">5</td>
+                    <td class="px-4 py-2">
+                      <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">已归档</span>
+                    </td>
+                    <td class="px-4 py-2">
+                      <button class="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50">查看详情</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div id="review-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+    <div class="bg-white rounded shadow-lg w-full max-w-md">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div class="font-bold">复核决策</div>
+        <button id="close-modal" class="p-2 hover:bg-gray-100 rounded">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="text-sm text-gray-600">档案编号：<span id="modal-case" class="font-mono"></span></div>
+        <div class="text-sm">请选择复核结果</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-decision="确认匹配" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">确认匹配</button>
+          <button data-decision="需进一步核查" class="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">需进一步核查</button>
+          <button data-decision="误报" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">误报</button>
+        </div>
+      </div>
+      <div class="px-4 py-3 border-t border-gray-200 flex justify-end">
+        <button id="confirm-review" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">提交</button>
+      </div>
+    </div>
+  </div>
+  <div id="globalAlert" class="global-alert" aria-live="assertive"></div>
+  <script src="main.js"></script>
+  <script>
+    const alerts=[{id:1,type:"urgent",confidence:94,case:"20190523001",time:"12-13 11:23",location:"XX市XX路口"},{id:2,type:"high",confidence:91,case:"20180712003",time:"12-13 09:15",location:"XX车站"},{id:3,type:"medium",confidence:89,case:"20200301012",time:"12-12 23:47",location:"XX商场"}];
+    let activeTab="dashboard";
+    let isAnalyzing=false;
+    let videoProgress=0;
+    let timer=null;
+    function renderAlerts(){
+      const tbody=document.getElementById("alerts-tbody");
+      tbody.innerHTML="";
+      alerts.forEach((alert,idx)=>{
+        const tr=document.createElement("tr");
+        tr.className="border-b border-gray-100 hover:bg-gray-50";
+        const confClass=alert.confidence>=90?"bg-red-100 text-red-700":alert.confidence>=85?"bg-orange-100 text-orange-700":"bg-yellow-100 text-yellow-700";
+        tr.innerHTML=`<td class="px-4 py-3">${idx+1}</td>
+        <td class="px-4 py-3 font-mono text-sm">${alert.case}</td>
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded text-sm font-semibold ${confClass}">${alert.confidence}%</span></td>
+        <td class="px-4 py-3 text-sm">监控视频</td>
+        <td class="px-4 py-3 text-sm">${alert.time}</td>
+        <td class="px-4 py-3 text-sm"><div class="flex items-center gap-1"><i data-lucide="map-pin" class="w-4 h-4 text-gray-500"></i>${alert.location}</div></td>
+        <td class="px-4 py-3"><button data-case="${alert.case}" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 review-btn">复核</button></td>`;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+      document.querySelectorAll(".review-btn").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          document.getElementById("modal-case").textContent=btn.getAttribute("data-case");
+          document.getElementById("review-modal").classList.remove("hidden");
+        });
+      });
+    }
+    function switchTab(id){
+      activeTab=id;
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+      document.querySelector(`.tab-btn[data-tab="${id}"]`).classList.add("active");
+      document.getElementById(id).classList.add("active");
+    }
+    function updateProgressViews(){
+      const bar=document.getElementById("video-progress-bar");
+      const text=document.getElementById("video-progress-text");
+      const engineBar=document.getElementById("engine-progress-bar");
+      const engineText=document.getElementById("engine-progress-text");
+      bar.style.width=videoProgress+"%";
+      text.textContent=videoProgress+"%";
+      engineBar.style.width=videoProgress+"%";
+      engineText.textContent=videoProgress+"%";
+    }
+    function startAnalyze(){
+      if(timer)clearInterval(timer);
+      timer=setInterval(()=>{
+        if(videoProgress<100){
+          videoProgress=Math.min(videoProgress+1,100);
+          updateProgressViews();
+        }else{
+          clearInterval(timer);
+          isAnalyzing=false;
+          document.getElementById("toggle-analyze").textContent="开始分析";
+          document.getElementById("analyze-status").textContent="已完成";
+        }
+      },200);
+    }
+    document.addEventListener("DOMContentLoaded",()=>{
+      lucide.createIcons();
+      renderAlerts();
+      document.querySelectorAll(".tab-btn").forEach(btn=>{
+        btn.addEventListener("click",()=>switchTab(btn.getAttribute("data-tab")));
+      });
+      document.getElementById("close-modal").addEventListener("click",()=>document.getElementById("review-modal").classList.add("hidden"));
+      document.querySelectorAll("#review-modal [data-decision]").forEach(b=>{
+        b.addEventListener("click",()=>{
+          document.querySelectorAll("#review-modal [data-decision]").forEach(x=>x.classList.remove("ring","ring-offset-1"));
+          b.classList.add("ring","ring-offset-1");
+          document.getElementById("confirm-review").setAttribute("data-decision",b.getAttribute("data-decision"));
+        });
+      });
+      document.getElementById("confirm-review").addEventListener("click",()=>{
+        document.getElementById("review-modal").classList.add("hidden");
+      });
+      document.getElementById("toggle-analyze").addEventListener("click",()=>{
+        isAnalyzing=!isAnalyzing;
+        document.getElementById("toggle-analyze").textContent=isAnalyzing?"暂停":"开始分析";
+        document.getElementById("analyze-status").textContent=isAnalyzing?"分析中":"已暂停";
+        if(isAnalyzing){startAnalyze()}else{if(timer)clearInterval(timer)}
+      });
+    });
+  </script>
+</body>
+</html>

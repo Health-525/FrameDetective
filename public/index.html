@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAM3 Video Processor - 控制台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <div class="logo">
+      <h1>SAM3 Video Processor</h1>
+      <span class="version" id="appVersion"></span>
+    </div>
+    <div class="status-bar" id="statusBar">
+      <span class="status-item">服务状态: <span class="indicator" id="serviceStatus" aria-live="polite"></span></span>
+    </div>
+  </header>
+
+  <div id="globalAlert" class="global-alert" aria-live="assertive"></div>
+
+  <main class="app-main">
+    <!-- 左侧：任务配置区 -->
+    <section class="panel config-panel" aria-label="任务配置">
+      <div class="panel-header">
+        <h2>新建任务</h2>
+      </div>
+
+      <div class="panel-content">
+        <!-- 面板1：新建视频任务 -->
+        <div id="panel-video-task" class="tab-pane active" style="display: flex;">
+          <form id="videoTaskForm">
+            <!-- Mode Toggle Tabs -->
+            <div class="input-mode-tabs">
+              <button type="button" class="mode-tab-btn active" data-mode="text">以文搜人</button>
+              <button type="button" class="mode-tab-btn" data-mode="image">以图搜人</button>
+            </div>
+
+            <div class="form-group">
+              <label for="inputVideoUrl">视频 URL <span class="required">*</span></label>
+              <input type="url" id="inputVideoUrl" name="video" placeholder="粘贴视频 URL (http://...)" required>
+              <small class="hint">支持 MP4/MOV 格式，建议使用直链</small>
+            </div>
+
+            <!-- Mode 1: Text Search (Default) -->
+            <div id="mode-text-pane" class="mode-pane active">
+              <div class="form-group">
+                <label for="inputPrompt">提示词 (Prompt)</label>
+                <input type="text" id="inputPrompt" name="prompt" value="blue boy" placeholder="例如: blue boy">
+                <small class="hint">用于 SAM3 定位目标对象</small>
+              </div>
+            </div>
+
+            <!-- Mode 2: Image Search -->
+            <div id="mode-image-pane" class="mode-pane">
+              <div class="form-group">
+                <label for="inputSampleImage">目标人物照片</label>
+                <div class="file-upload-wrapper">
+                  <input type="url" id="inputSampleImage" name="sample_image_url" placeholder="粘贴图片 URL 或拖入本地图片" style="flex:1;">
+                  <input type="file" id="inputFileUpload" accept="image/*" style="display:none;">
+                  <button type="button" id="btnBrowseFile" class="btn-icon" title="选择本地文件">📂</button>
+                </div>
+                <div id="dropZone" class="drop-zone" style="display:none;">
+                  <span>释放以上传图片</span>
+                </div>
+                <small class="hint">系统将自动提取照片中的人物特征并开始搜索</small>
+              </div>
+            </div>
+
+            <fieldset class="advanced-settings">
+              <legend>高级设置（可选）</legend>
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="selectMaskColor">掩码颜色</label>
+                  <select id="selectMaskColor" name="mask_color">
+                    <option value="red" selected>红色 (Red)</option>
+                    <option value="blue">蓝色 (Blue)</option>
+                    <option value="green">绿色 (Green)</option>
+                  </select>
+                </div>
+                <div class="form-group half">
+                  <label for="inputOpacity">透明度 (0-1)</label>
+                  <input type="number" id="inputOpacity" name="mask_opacity" value="0.8" step="0.1" min="0" max="1">
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="mask_only" id="checkMaskOnly">
+                  <span>仅显示掩码 (Mask Only)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="return_zip" id="checkReturnZip" checked>
+                  <span>返回 ZIP (Return ZIP)</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <details class="expert-settings">
+              <summary>高级参数（专家使用）</summary>
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="inputAreaThreshold">掩码面积占比阈值 (0-1)</label>
+                  <input type="number" id="inputAreaThreshold" name="area_threshold" value="0.001" step="0.001" min="0" max="1">
+                  <small class="hint">按帧掩码面积 / 全帧面积，默认约等于1000像素</small>
+                </div>
+                <div class="form-group half">
+                  <label for="inputMinRun">最少连续命中帧数</label>
+                  <input type="number" id="inputMinRun" name="min_run" value="2" min="1" step="1">
+                  <small class="hint">用于去抖动，连续多少帧命中才算有效</small>
+                </div>
+              </div>
+            </details>
+
+            <div class="action-bar">
+              <button type="button" id="btnStartTask" class="btn btn-primary">开始任务</button>
+              <button type="button" id="btnResetForm" class="btn btn-secondary">重置</button>
+            </div>
+          </form>
+
+          <!-- 任务队列列表 -->
+          <div class="task-queue-section">
+            <h4>任务队列 <span id="queueCount" class="badge">0</span></h4>
+            <div id="taskQueueList" class="queue-list">
+              <!-- 动态插入任务卡片 -->
+              <div class="empty-state" id="queueEmptyState">暂无待处理任务</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中间：输入预览区 -->
+    <section class="panel preview-panel" aria-label="输入预览">
+      <div class="panel-header">
+        <h2>输入预览</h2>
+        <div class="task-info" id="previewTaskInfo">
+          <span class="task-id">未选择任务</span>
+        </div>
+      </div>
+      
+      <div class="preview-content">
+        <!-- JSON 参数预览 -->
+        <div class="code-block-wrapper">
+          <div class="code-header">
+            <span>Request Payload (JSON)</span>
+            <button type="button" class="btn-icon" id="btnCopyJson" title="复制 JSON">📋</button>
+          </div>
+          <pre id="jsonPreviewCode" class="code-block">{}</pre>
+        </div>
+
+        <!-- 视频/媒体预览 -->
+        <div class="media-preview" id="mediaPreviewArea">
+          <div class="placeholder-box">
+            <p>请在左侧选择任务查看详情</p>
+          </div>
+          <video id="previewVideoPlayer" controls style="display:none;"></video>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧：结果与日志区 -->
+    <section class="panel result-panel" aria-label="结果与日志">
+      <div class="panel-header">
+        <h2>运行结果 & 日志</h2>
+      </div>
+      
+      <div class="result-content">
+        <!-- 结果列表 -->
+        <div id="resultList" class="result-list">
+          <div class="empty-state" id="resultEmptyState">暂时没有任务结果</div>
+        </div>
+
+        <!-- 运行日志 -->
+        <div class="log-section">
+          <div class="log-header">
+            <span>系统日志</span>
+            <button type="button" id="btnClearLogs" class="btn-text">清空</button>
+          </div>
+          <div
+            id="systemLogs"
+            class="log-console"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+          >
+            <div class="log-entry info"><span class="time">[System]</span> 系统初始化完成</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
