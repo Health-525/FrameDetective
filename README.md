@@ -1,8 +1,18 @@
+# FrameDetective 
+ 
+<div align="center"> 
+ 
+  <img src="assets/framedetective-banner.jpg" alt="FrameDetective Banner" width="100%%"> 
+ 
+  <br><br> 
+ 
+  <p align="center"> 
+    <b>?? 基于 SAM3 的智能视频内容检测与分析系统</b> 
+  </p>
 # FrameDetective
 
 <div align="center">
 
-  <h1>馃幀 FrameDetective</h1>
 
   <p align="center">
     <b>馃殌 鍩轰簬 SAM3 鐨勬櫤鑳借棰戝唴瀹规娴嬩笌鍒嗘瀽绯荤粺</b>
